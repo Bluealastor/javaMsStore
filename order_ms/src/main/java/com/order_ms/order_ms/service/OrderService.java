@@ -1,5 +1,6 @@
 package com.order_ms.order_ms.service;
 
+import com.order_ms.order_ms.client.InventoryClient;
 import com.order_ms.order_ms.dto.OrderDto;
 import com.order_ms.order_ms.entity.OrderEntity;
 import com.order_ms.order_ms.repository.OrderRepository;
@@ -13,13 +14,21 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class OrderService {
 
-    private final OrderRepository orderRepository;
     private final ModelMapper modelMapper;
+    private final OrderRepository orderRepository;
+    private final InventoryClient inventoryClient;
 
-    public void createOrder (OrderDto orderDto){
+
+    public void placeOrder (OrderDto orderDto){
         OrderEntity orderEntity = modelMapper.map(orderDto, OrderEntity.class);
-        orderRepository.save(orderEntity);
-        log.info("Product created success");
+        var result = inventoryClient.isInStock(orderEntity.getSkuCode(), orderEntity.getQuantity());
+        if (result) {
+            orderRepository.save(orderEntity);
+        } else {
+            throw new RuntimeException("Product with Skucode: " + orderDto.getSkuCode() + " Not in Stock");
+        }
+
+
     }
 
 }
